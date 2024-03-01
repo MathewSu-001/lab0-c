@@ -183,35 +183,35 @@ void q_reverseK(struct list_head *head, int k)
     }  // not finished
 }
 
-struct list_head *merge_list(struct list_head *left,
-                             struct list_head *right,
-                             bool descend)
+void merge_list(struct list_head **left, struct list_head *right, bool descend)
 {
     // merge with recursive
-    if (!right)
-        return left;
-    if (!left)
-        return right;
+    // if (!right)
+    //     return;
+    // if (!left) {
+    //     *left = right;
+    //     return;
+    // }
 
-    char *s1 = list_entry(left, element_t, list)->value;
-    char *s2 = list_entry(right, element_t, list)->value;
-    if (descend) {
-        if (strcmp(s1, s2) > 0) {
-            left->next = merge_list(left->next, right, descend);
-            return left;
-        } else {
-            right->next = merge_list(left, right->next, descend);
-            return right;
-        }
-    } else {
-        if (strcmp(s1, s2) < 0) {
-            left->next = merge_list(left->next, right, descend);
-            return left;
-        } else {
-            right->next = merge_list(left, right->next, descend);
-            return right;
-        }
-    }
+    // if (descend) {
+    //     char *s1 = list_entry(*left, element_t, list)->value;
+    //     char *s2 = list_entry(right, element_t, list)->value;
+    //     if (strcmp(s1, s2) > 0) {
+    //         left->next = merge_list(left->next, right, descend);
+    //         return left;
+    //     } else {
+    //         right->next = merge_list(left, right->next, descend);
+    //         return right;
+    //     }
+    // } else {
+    //     if (strcmp(s1, s2) < 0) {
+    //         left->next = merge_list(left->next, right, descend);
+    //         return left;
+    //     } else {
+    //         right->next = merge_list(left, right->next, descend);
+    //         return right;
+    //     }
+    // }
 }
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
@@ -233,8 +233,7 @@ void q_sort(struct list_head *head, bool descend)
     q_sort(head, descend);
     q_sort(&new_list, descend);
 
-    head = merge_list(head, &new_list, descend);
-    return head;
+    merge_list(&head, &new_list, descend);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
