@@ -59,10 +59,16 @@ bool q_insert_tail(struct list_head *head, char *s)
 {
     if (!head)
         return false;
+
     element_t *new = malloc(sizeof(element_t));
-    if (!new)
+    char *tmp = strdup(s);
+    if (!new || !tmp) {
+        free(new);
+        free(tmp);
         return false;  // to check if allocation was successful
-    new->value = s;
+    }
+
+    new->value = tmp;
     list_add_tail(&new->list, head);
     return true;
 }
