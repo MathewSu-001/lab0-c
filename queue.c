@@ -183,8 +183,59 @@ void q_reverseK(struct list_head *head, int k)
     }  // not finished
 }
 
+struct list_head *merge_list(struct list_head *left,
+                             struct list_head *right,
+                             bool descend)
+{
+    // merge with recursive
+    if (!right)
+        return left;
+    if (!left)
+        return right;
+
+    char *s1 = list_entry(left, element_t, list)->value;
+    char *s2 = list_entry(right, element_t, list)->value;
+    if (descend) {
+        if (strcmp(s1, s2) > 0) {
+            left->next = merge_list(left->next, right, descend);
+            return left;
+        } else {
+            right->next = merge_list(left, right->next, descend);
+            return right;
+        }
+    } else {
+        if (strcmp(s1, s2) < 0) {
+            left->next = merge_list(left->next, right, descend);
+            return left;
+        } else {
+            right->next = merge_list(left, right->next, descend);
+            return right;
+        }
+    }
+}
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head || !head->next)
+        return;
+
+    // step1. split from middle
+    struct list_head *slow = head;
+    for (struct list_head *fast = head->next; fast && fast->next;
+         fast = fast->next->next)  // not sure whether fit link list
+        slow = slow->next;
+
+    LIST_HEAD(new_list);
+    struct list_head *mid = slow->next;
+    list_cut_position(&new_list, head, mid);
+
+    // step2. recursive
+    q_sort(head, descend);
+    q_sort(&new_list, descend);
+
+    head = merge_list(head, &new_list, descend);
+    return head;
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
