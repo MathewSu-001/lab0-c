@@ -134,9 +134,9 @@ bool q_delete_mid(struct list_head *head)
 }
 
 /* Delete all nodes that have duplicate string */
-bool q_delete_dup(struct list_head *head)
+bool q_delete_dup(struct list_head *head)  // false
 {
-    if (!head)
+    if (!head || list_empty(head))
         return false;
     element_t *front, *back;
     bool is_dup = false;
@@ -161,43 +161,47 @@ bool q_delete_dup(struct list_head *head)
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
 {
+    if (!head || list_empty(head))
+        return;
+
     q_reverseK(head, 2);
 }
 
 /* Reverse elements in queue */
 void q_reverse(struct list_head *head)
 {
-    struct list_head *tmp;
+    if (!head || list_empty(head))
+        return;
+
     struct list_head *cur, *next;
-    list_for_each_safe (cur, next, head) {  // not include head
-        tmp = cur->next;
-        cur->next = cur->prev;
-        cur->prev = tmp;
+    list_for_each_safe (cur, next, head) {
+        list_move(cur, head);
     }
-    tmp = head->next;
-    head->next = head->prev;
-    head->prev = tmp;
 }
 
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
 {
-    if (!head || list_empty(head))
+    if (!head || list_empty(head) || k == 1)
         return;
 
     int len = q_size(head);
     if (k > len)
         return;
 
-    struct list_head *tmp, *cur = head;
+    struct list_head *cur, *safe, *tmp_head = head, rse;
+    INIT_LIST_HEAD(&rse);
     int count = 0;
-    while (k < count) {
-        tmp = cur->next;
-        cur->next = cur->prev;
-        cur->prev = tmp;
-        cur = tmp;
+    list_for_each_safe (cur, safe, head) {
         count++;
-    }  // not finished
+        if (count == k) {
+            count = 0;
+            list_cut_position(&rse, tmp_head, cur);
+            q_reverse(&rse);
+            list_splice(&rse, tmp_head);
+            tmp_head = safe->prev;
+        }
+    }
 }
 
 void merge_list(struct list_head **left, struct list_head *right, bool descend)
