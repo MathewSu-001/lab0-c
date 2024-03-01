@@ -51,6 +51,7 @@ bool q_insert_head(struct list_head *head, char *s)
 
     new->value = tmp;
     list_add(&new->list, head);
+    free(tmp);
     return true;
 }
 
@@ -70,6 +71,7 @@ bool q_insert_tail(struct list_head *head, char *s)
 
     new->value = tmp;
     list_add_tail(&new->list, head);
+    free(tmp);
     return true;
 }
 
