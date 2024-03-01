@@ -273,8 +273,9 @@ int q_merge(struct list_head *head, bool descend)
     q_sort(head, descend);
     q_sort(&new_list, descend);
 
-    head = merge_list(list_entry(head, queue_contex_t, chain)->q,
-                      list_entry(&new_list, queue_contex_t, chain)->q, descend);
+    // head = merge_list(list_entry(head, queue_contex_t, chain)->q,
+    //                   list_entry(&new_list, queue_contex_t, chain)->q,
+    //                   descend);
 
-    return q_size(head);
+    return 0;
 }
