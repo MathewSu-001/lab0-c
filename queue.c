@@ -29,9 +29,10 @@ void q_free(struct list_head *head)
 
     element_t *cur, *next;
     list_for_each_entry_safe (cur, next, head, list) {
-        list_del(&cur->list);  // why???
+        list_del(&cur->list);
         q_release_element(cur);
     }
+    free(head);
 }
 
 /* Insert an element at head of queue */
@@ -192,7 +193,6 @@ void merge_list(struct list_head **left, struct list_head *right, bool descend)
     //     *left = right;
     //     return;
     // }
-
     // if (descend) {
     //     char *s1 = list_entry(*left, element_t, list)->value;
     //     char *s2 = list_entry(right, element_t, list)->value;
@@ -256,6 +256,25 @@ int q_descend(struct list_head *head)
  * order */
 int q_merge(struct list_head *head, bool descend)
 {
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head)
+        return 0;
+
+    // step1. split from middle
+    struct list_head *slow = head;
+    for (struct list_head *fast = head->next; fast && fast->next;
+         fast = fast->next->next)  // not sure whether fit link list
+        slow = slow->next;
+
+    LIST_HEAD(new_list);
+    struct list_head *mid = slow->next;
+    list_cut_position(&new_list, head, mid);
+
+    // step2. recursive
+    q_sort(head, descend);
+    q_sort(&new_list, descend);
+
+    head = merge_list(list_entry(head, queue_contex_t, chain)->q,
+                      list_entry(&new_list, queue_contex_t, chain)->q, descend);
+
+    return q_size(head);
 }
