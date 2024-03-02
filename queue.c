@@ -138,10 +138,11 @@ bool q_delete_dup(struct list_head *head)  // false
 {
     if (!head || list_empty(head))
         return false;
+
     element_t *front, *back;
     bool is_dup = false;
     list_for_each_entry_safe (front, back, head, list) {
-        if (front->value == back->value) {
+        if (&back->list != head && strcmp(front->value, back->value) == 0) {
             is_dup = true;
             list_del(&front->list);
             q_release_element(front);
@@ -150,8 +151,6 @@ bool q_delete_dup(struct list_head *head)  // false
                 is_dup = false;
                 list_del(&front->list);
                 q_release_element(front);
-            } else {
-                is_dup = false;
             }
         }
     }
