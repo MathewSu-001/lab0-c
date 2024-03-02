@@ -204,49 +204,49 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
-void merge_list(struct list_head **left, struct list_head *right, bool descend)
+void merge_list(struct list_head *left, struct list_head *right, bool descend)
 {
-    struct list_head *tmp = q_new();
-    for (; !list_empty(*left) && !list_empty(right);) {
-        char *s1 = list_entry((*left)->next, element_t, list)->value;
+    if (!left || !right)
+        return;
+    LIST_HEAD(tmp);
+    for (; !list_empty(left) && !list_empty(right);) {
+        char *s1 = list_entry(left->next, element_t, list)->value;
         char *s2 = list_entry(right->next, element_t, list)->value;
         if (strcmp(s1, s2) >= 0) {
-            descend ? list_move_tail((*left)->next, tmp)
-                    : list_move((*left)->next, tmp);
+            descend ? list_move_tail(left->next, &tmp)
+                    : list_move_tail(right->next, &tmp);
         } else {
-            descend ? list_move_tail(right->next, tmp)
-                    : list_move(right->next, tmp);
+            descend ? list_move_tail(right->next, &tmp)
+                    : list_move_tail(left->next, &tmp);
         }
     }
 
-    list_empty(*left) ? list_splice_tail(right, tmp)
-                      : list_splice_tail((*left), tmp);
-
-    *left = tmp;
+    list_splice(&tmp, left);
+    if (!list_empty(right))
+        list_splice_tail(right, left);
 }
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
 {
-    if (!head || !head->next)
+    if (!head || !head->next || list_is_singular(head))
         return;
 
     // step1. split from middle
-    struct list_head *slow = head->next;
+    struct list_head *mid = head->next;
     for (struct list_head *fast = head->next;
          fast != head && fast != head->prev;) {
-        slow = slow->next;
+        mid = mid->next;
         fast = fast->next->next;
     }
 
     LIST_HEAD(new_list);
-    struct list_head *mid = slow->next;
-    list_cut_position(&new_list, head, mid);
+    list_cut_position(&new_list, head, mid->prev);
 
     // step2. recursive
     q_sort(head, descend);
     q_sort(&new_list, descend);
 
-    merge_list(&head, &new_list, descend);
+    merge_list(head, &new_list, descend);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
