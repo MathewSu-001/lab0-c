@@ -223,12 +223,12 @@ void merge_list(struct list_head *left, struct list_head *right, bool descend)
 
     list_splice(&tmp, left);
     if (!list_empty(right))
-        list_splice_tail(right, left);
+        list_splice_tail_init(right, left);
 }
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
 {
-    if (!head || !head->next || list_is_singular(head))
+    if (!head || list_empty(head) || list_is_singular(head))
         return;
 
     // step1. split from middle
@@ -253,9 +253,9 @@ void q_sort(struct list_head *head, bool descend)
  * the right side of it */
 int q_ascend(struct list_head *head)
 {
-    if (!head || !head->next)
+    if (!head || list_empty(head))
         return 0;
-    if (head->next->next == head)  // only node
+    if (list_is_singular(head))  // only one node
         return 1;
 
     struct list_head *max = head->prev, *node = head->prev->prev;
@@ -278,9 +278,9 @@ int q_ascend(struct list_head *head)
  * to the right side of it */
 int q_descend(struct list_head *head)
 {
-    if (!head || !head->next)
+    if (!head || list_empty(head))
         return 0;
-    if (head->next->next == head)  // only node
+    if (list_is_singular(head))  // only one node
         return 1;
 
     struct list_head *min = head->prev, *node = head->prev->prev;
@@ -303,26 +303,19 @@ int q_descend(struct list_head *head)
  * ascending/descending order */
 int q_merge(struct list_head *head, bool descend)
 {
-    if (!head)
+    if (!head || list_empty(head))
         return 0;
+    if (list_is_singular(head))  // only one node
+        return list_entry(head, queue_contex_t, chain)->size;
 
-    // step1. split from middle
-    struct list_head *slow = head;
-    for (struct list_head *fast = head->next; fast && fast->next;
-         fast = fast->next->next)  // not sure whether fit link list
-        slow = slow->next;
+    queue_contex_t *cur, *next;
+    int count = 0;
+    LIST_HEAD(tmp);
+    list_for_each_entry_safe (cur, next, head, chain) {
+        count += cur->size;
+        merge_list(&tmp, cur->q, descend);
+    }
 
-    LIST_HEAD(new_list);
-    struct list_head *mid = slow->next;
-    list_cut_position(&new_list, head, mid);
-
-    // step2. recursive
-    q_sort(head, descend);
-    q_sort(&new_list, descend);
-
-    // head = merge_list(list_entry(head, queue_contex_t, chain)->q,
-    //                   list_entry(&new_list, queue_contex_t, chain)->q,
-    //                   descend);
-
-    return 0;
+    list_splice(&tmp, list_entry(head->next, queue_contex_t, chain)->q);
+    return count;
 }
