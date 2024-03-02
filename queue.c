@@ -206,32 +206,23 @@ void q_reverseK(struct list_head *head, int k)
 
 void merge_list(struct list_head **left, struct list_head *right, bool descend)
 {
-    // merge with recursive
-    // if (!right)
-    //     return;
-    // if (!left) {
-    //     *left = right;
-    //     return;
-    // }
-    // if (descend) {
-    //     char *s1 = list_entry(*left, element_t, list)->value;
-    //     char *s2 = list_entry(right, element_t, list)->value;
-    //     if (strcmp(s1, s2) > 0) {
-    //         left->next = merge_list(left->next, right, descend);
-    //         return left;
-    //     } else {
-    //         right->next = merge_list(left, right->next, descend);
-    //         return right;
-    //     }
-    // } else {
-    //     if (strcmp(s1, s2) < 0) {
-    //         left->next = merge_list(left->next, right, descend);
-    //         return left;
-    //     } else {
-    //         right->next = merge_list(left, right->next, descend);
-    //         return right;
-    //     }
-    // }
+    struct list_head *tmp = q_new();
+    for (; !list_empty(*left) && !list_empty(right);) {
+        char *s1 = list_entry((*left)->next, element_t, list)->value;
+        char *s2 = list_entry(right->next, element_t, list)->value;
+        if (strcmp(s1, s2) >= 0) {
+            descend ? list_move_tail((*left)->next, tmp)
+                    : list_move((*left)->next, tmp);
+        } else {
+            descend ? list_move_tail(right->next, tmp)
+                    : list_move(right->next, tmp);
+        }
+    }
+
+    list_empty(*left) ? list_splice_tail(right, tmp)
+                      : list_splice_tail((*left), tmp);
+
+    *left = tmp;
 }
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
@@ -240,10 +231,12 @@ void q_sort(struct list_head *head, bool descend)
         return;
 
     // step1. split from middle
-    struct list_head *slow = head;
-    for (struct list_head *fast = head->next; fast && fast->next;
-         fast = fast->next->next)  // not sure whether fit link list
+    struct list_head *slow = head->next;
+    for (struct list_head *fast = head->next;
+         fast != head && fast != head->prev;) {
         slow = slow->next;
+        fast = fast->next->next;
+    }
 
     LIST_HEAD(new_list);
     struct list_head *mid = slow->next;
@@ -253,7 +246,7 @@ void q_sort(struct list_head *head, bool descend)
     q_sort(head, descend);
     q_sort(&new_list, descend);
 
-    // merge_list(&head, &new_list, descend);
+    merge_list(&head, &new_list, descend);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
@@ -281,8 +274,8 @@ int q_ascend(struct list_head *head)
     return q_size(head);
 }
 
-/* Remove every node which has a node with a strictly greater value anywhere to
- * the right side of it */
+/* Remove every node which has a node with a strictly greater value anywhere
+ * to the right side of it */
 int q_descend(struct list_head *head)
 {
     if (!head || !head->next)
@@ -306,8 +299,8 @@ int q_descend(struct list_head *head)
     return q_size(head);
 }
 
-/* Merge all the queues into one sorted queue, which is in ascending/descending
- * order */
+/* Merge all the queues into one sorted queue, which is in
+ * ascending/descending order */
 int q_merge(struct list_head *head, bool descend)
 {
     if (!head)
