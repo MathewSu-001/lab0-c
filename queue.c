@@ -1,8 +1,8 @@
+#include "queue.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "queue.h"
+#include <time.h>
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -317,4 +317,30 @@ int q_merge(struct list_head *head, bool descend)
 
     list_splice(&tmp, list_entry(head->next, queue_contex_t, chain)->q);
     return count;
+}
+
+/*Using the Fisher-Yates shuffle algorithm to implement shuffling*/
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    int count = q_size(head);
+    LIST_HEAD(tmp);
+    while (count > 1) {
+        srand(time(NULL));
+        int random_index = rand() % count;
+        struct list_head *cur = head->next;
+        for (; random_index > 0; random_index--)
+            cur = cur->next;
+
+        LIST_HEAD(new_list);
+        list_cut_position(&new_list, head, cur->prev);
+        list_move(head->next, &tmp);
+        list_move(head->prev, head);
+        list_splice_init(&new_list, head);
+        --count;
+    }
+
+    list_splice_tail_init(&tmp, head);
 }
