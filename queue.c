@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -327,14 +327,14 @@ void q_shuffle(struct list_head *head)
 
     int count = q_size(head);
     LIST_HEAD(tmp);
-    while (count > 1) {
-        srand(time(NULL));
+    LIST_HEAD(new_list);
+    while (count > 0) {
+        // srand(time(NULL));
         int random_index = rand() % count;
         struct list_head *cur = head->next;
         for (; random_index > 0; random_index--)
             cur = cur->next;
 
-        LIST_HEAD(new_list);
         list_cut_position(&new_list, head, cur->prev);
         list_move(head->next, &tmp);
         list_move(head->prev, head);
