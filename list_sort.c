@@ -7,8 +7,8 @@
 #include "list.h"
 #include "queue.h"
 
-__attribute__((nonnull)) static int cmp(const struct list_head *a,
-                                        const struct list_head *b)
+__attribute__((nonnull)) int cmp(const struct list_head *a,
+                                 const struct list_head *b)
 {
     element_t *ela = NULL, *elb = NULL;
 
