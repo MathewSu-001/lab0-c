@@ -5,20 +5,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
+#include "queue.h"
+
+__attribute__((nonnull)) static int cmp(const struct list_head *a,
+                                        const struct list_head *b)
+{
+    element_t *ela = NULL, *elb = NULL;
+
+    ela = container_of(a, element_t, list);  // cppcheck-suppress nullPointer
+    elb = container_of(b, element_t, list);  // cppcheck-suppress nullPointer
+
+    return strcmp(ela->value, elb->value);
+}
 
 /*
  * Returns a list organized in an intermediate format suited
  * to chaining of merge() calls: null-terminated, no reserved or
  * sentinel head node, "prev" links not maintained.
  */
-__attribute__((nonnull(2, 3, 4))) static struct list_head *
-merge(void *priv, list_cmp_func_t cmp, struct list_head *a, struct list_head *b)
+__attribute__((nonnull)) static struct list_head *merge(struct list_head *a,
+                                                        struct list_head *b)
 {
     struct list_head *head = NULL, **tail = &head;
 
     for (;;) {
         /* if equal, take 'a' -- important for sort stability */
-        if (cmp(priv, a, b) <= 0) {
+        if (cmp(a, b) <= 0) {
             *tail = a;
             tail = &a->next;
             a = a->next;
@@ -46,19 +58,16 @@ merge(void *priv, list_cmp_func_t cmp, struct list_head *a, struct list_head *b)
  * prev-link restoration pass, or maintaining the prev links
  * throughout.
  */
-__attribute__((nonnull(2, 3, 4, 5))) static void merge_final(
-    void *priv,
-    list_cmp_func_t cmp,
-    struct list_head *head,
-    struct list_head *a,
-    struct list_head *b)
+__attribute__((nonnull)) static void merge_final(struct list_head *head,
+                                                 struct list_head *a,
+                                                 struct list_head *b)
 {
     struct list_head *tail = head;
     uint8_t count = 0;
 
     for (;;) {
         /* if equal, take 'a' -- important for sort stability */
-        if (cmp(priv, a, b) <= 0) {
+        if (cmp(a, b) <= 0) {
             tail->next = a;
             a->prev = tail;
             tail = a;
@@ -88,7 +97,7 @@ __attribute__((nonnull(2, 3, 4, 5))) static void merge_final(
          * routine can invoke cond_resched() periodically.
          */
         if (unlikely(!++count))
-            cmp(priv, b, b);
+            cmp(b, b);
         b->prev = tail;
         tail = b;
         b = b->next;
@@ -182,9 +191,7 @@ __attribute__((nonnull(2, 3, 4, 5))) static void merge_final(
  * of size 2^k varies from 2^(k-1) (cases 3 and 5 when x == 0) to
  * 2^(k+1) - 1 (second merge of case 5 when x == 2^(k-1) - 1).
  */
-__attribute__((nonnull(2, 3))) void list_sort(void *priv,
-                                              struct list_head *head,
-                                              list_cmp_func_t cmp)
+__attribute__((nonnull)) void list_sort(struct list_head *head)
 {
     struct list_head *list = head->next, *pending = NULL;
     size_t count = 0; /* Count of pending */
@@ -224,7 +231,7 @@ __attribute__((nonnull(2, 3))) void list_sort(void *priv,
         if (likely(bits)) {
             struct list_head *a = *tail, *b = a->prev;
 
-            a = merge(priv, cmp, b, a);
+            a = merge(b, a);
             /* Install the merged result in place of the inputs */
             a->prev = b->prev;
             *tail = a;
@@ -246,10 +253,10 @@ __attribute__((nonnull(2, 3))) void list_sort(void *priv,
 
         if (!next)
             break;
-        list = merge(priv, cmp, pending, list);
+        list = merge(pending, list);
         pending = next;
     }
     /* The final merge, rebuilding prev links */
-    merge_final(priv, cmp, head, pending, list);
+    merge_final(head, pending, list);
 }
-EXPORT_SYMBOL(list_sort);
+// EXPORT_SYMBOL(list_sort);

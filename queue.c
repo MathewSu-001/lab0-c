@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "list_sort.h"
 
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
@@ -246,6 +247,19 @@ void q_sort(struct list_head *head, bool descend)
     q_sort(&new_list, descend);
 
     merge_list(head, &new_list, descend);
+}
+
+/* Use linux/list_sort to sort elements of queue in
+ * ascending/descending order */
+void q_listsort(struct list_head *head, bool descend)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    list_sort(head);
+
+    if (descend)
+        q_reverse(head);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
