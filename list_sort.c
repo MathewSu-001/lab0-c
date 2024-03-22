@@ -51,6 +51,69 @@ __attribute__((nonnull)) static struct list_head *merge(struct list_head *a,
     return head;
 }
 
+static struct list_head *search(struct list_head *val,
+                                struct list_head *list,
+                                int stable)
+{
+    struct list_head *head = list, *tail = list;
+    int k = 0, count = 2;
+
+    while (1) {
+        for (; count > 0 && tail; count--)
+            tail = tail->next;
+        if (cmp(val, tail) <= 0 && tail)
+            break;
+        k += 1;
+        count = 1 << k;
+        head = tail;
+    }
+
+    if (stable) {
+        while (cmp(val, head) > 0)
+            head = head->next;
+    } else {
+        while (cmp(val, head) >= 0)
+            head = head->next;
+    }
+
+    return head;
+}
+
+static void gallop_merge(struct list_head *head,
+                         struct list_head *a,
+                         struct list_head *b)
+{
+    struct list_head *tail = head, *tmp = NULL;
+
+    while (a && b) {
+        if (cmp(a, b) <= 0) {
+            tail->next = a;
+            tmp = search(b, a, 0);
+            tail = tmp;
+            a = tmp->next;
+        } else {
+            tail->next = b;
+            tmp = search(a, b, 1);
+            tail = tmp;
+            b = tmp->next;
+        }
+    }
+
+    if (!b)
+        tmp = a;
+    else
+        tmp = b;
+
+    tail->next = tmp;
+    tmp->prev = tail;
+    while (tmp->next)
+        tmp = tmp->next;
+
+    tail->next = head;
+    head->prev = tail;
+}
+
+
 /*
  * Combine final list merge with restoration of standard doubly-linked
  * list structure.  This approach duplicates code from merge(), but
@@ -58,55 +121,55 @@ __attribute__((nonnull)) static struct list_head *merge(struct list_head *a,
  * prev-link restoration pass, or maintaining the prev links
  * throughout.
  */
-__attribute__((nonnull)) static void merge_final(struct list_head *head,
-                                                 struct list_head *a,
-                                                 struct list_head *b)
-{
-    struct list_head *tail = head;
-    uint8_t count = 0;
+// __attribute__((nonnull)) static void merge_final(struct list_head *head,
+//                                                  struct list_head *a,
+//                                                  struct list_head *b)
+// {
+//     struct list_head *tail = head;
+//     uint8_t count = 0;
 
-    for (;;) {
-        /* if equal, take 'a' -- important for sort stability */
-        if (cmp(a, b) <= 0) {
-            tail->next = a;
-            a->prev = tail;
-            tail = a;
-            a = a->next;
-            if (!a)
-                break;
-        } else {
-            tail->next = b;
-            b->prev = tail;
-            tail = b;
-            b = b->next;
-            if (!b) {
-                b = a;
-                break;
-            }
-        }
-    }
+//     for (;;) {
+//         /* if equal, take 'a' -- important for sort stability */
+//         if (cmp(a, b) <= 0) {
+//             tail->next = a;
+//             a->prev = tail;
+//             tail = a;
+//             a = a->next;
+//             if (!a)
+//                 break;
+//         } else {
+//             tail->next = b;
+//             b->prev = tail;
+//             tail = b;
+//             b = b->next;
+//             if (!b) {
+//                 b = a;
+//                 break;
+//             }
+//         }
+//     }
 
-    /* Finish linking remainder of list b on to tail */
-    tail->next = b;
-    do {
-        /*
-         * If the merge is highly unbalanced (e.g. the input is
-         * already sorted), this loop may run many iterations.
-         * Continue callbacks to the client even though no
-         * element comparison is needed, so the client's cmp()
-         * routine can invoke cond_resched() periodically.
-         */
-        if (unlikely(!++count))
-            cmp(b, b);
-        b->prev = tail;
-        tail = b;
-        b = b->next;
-    } while (b);
+//     /* Finish linking remainder of list b on to tail */
+//     tail->next = b;
+//     do {
+//         /*
+//          * If the merge is highly unbalanced (e.g. the input is
+//          * already sorted), this loop may run many iterations.
+//          * Continue callbacks to the client even though no
+//          * element comparison is needed, so the client's cmp()
+//          * routine can invoke cond_resched() periodically.
+//          */
+//         if (unlikely(!++count))
+//             cmp(b, b);
+//         b->prev = tail;
+//         tail = b;
+//         b = b->next;
+//     } while (b);
 
-    /* And the final links to make a circular doubly-linked list */
-    tail->next = head;
-    head->prev = tail;
-}
+//     /* And the final links to make a circular doubly-linked list */
+//     tail->next = head;
+//     head->prev = tail;
+// }
 
 /**
  * list_sort - sort a list
@@ -257,6 +320,7 @@ __attribute__((nonnull)) void list_sort(struct list_head *head)
         pending = next;
     }
     /* The final merge, rebuilding prev links */
-    merge_final(head, pending, list);
+    // merge_final(head, pending, list);
+    gallop_merge(head, pending, list);
 }
 // EXPORT_SYMBOL(list_sort);
