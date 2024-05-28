@@ -42,10 +42,10 @@ extern int show_entropy;
  * OK as long as head field of queue_t structure is in first position in
  * solution code
  */
-#include "queue.h"
-
 #include "console.h"
+#include "queue.h"
 #include "report.h"
+#include "ttt.h"
 
 /* Settable parameters */
 
@@ -952,6 +952,12 @@ static bool do_shuffle(int argc, char *argv[])
     return !error_check();
 }
 
+static bool do_ttt(int argc, char *argv[])
+{
+    ttt();
+    return 0;
+}
+
 static bool is_circular()
 {
     struct list_head *cur = current->q->next;
@@ -1132,6 +1138,7 @@ static void console_init()
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
     ADD_COMMAND(shuffle, "Do Fisher-Yates shuffle", "");
+    ADD_COMMAND(ttt, "Play Tic-tac-toe game", "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
