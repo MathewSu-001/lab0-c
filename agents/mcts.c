@@ -8,11 +8,13 @@
 #include "mcts.h"
 #include "util.h"
 
+#define frac_bits 8
+
 struct node {
     int move;
     char player;
     int n_visits;
-    double score;
+    unsigned score;
     struct node *parent;
     struct node *children[N_GRIDS];
 };
@@ -37,7 +39,7 @@ static void free_node(struct node *node)
     free(node);
 }
 
-static inline double uct_score(int n_total, int n_visits, double score)
+static inline double uct_score(int n_total, int n_visits, unsigned score)
 {
     if (n_visits == 0)
         return DBL_MAX;
@@ -48,21 +50,30 @@ static inline double uct_score(int n_total, int n_visits, double score)
 static struct node *select_move(struct node *node)
 {
     struct node *best_node = NULL;
-    double best_score = -1;
+    unsigned best_score = 0;
     for (int i = 0; i < N_GRIDS; i++) {
         if (!node->children[i])
             continue;
-        double score = uct_score(node->n_visits, node->children[i]->n_visits,
-                                 node->children[i]->score);
+        unsigned score = uct_score(node->n_visits, node->children[i]->n_visits,
+                                   node->children[i]->score);
         if (score > best_score) {
             best_score = score;
             best_node = node->children[i];
         }
     }
+
+    if (!best_node) {
+        while (1) {
+            best_node = node->children[rand() % N_GRIDS];
+            if (best_node)
+                break;
+        }
+    }
+
     return best_node;
 }
 
-static double simulate(char *table, char player)
+static unsigned simulate(char *table, char player)
 {
     char current_player = player;
     char temp_table[N_GRIDS];
@@ -84,16 +95,16 @@ static double simulate(char *table, char player)
             return calculate_win_value(win, player);
         current_player ^= 'O' ^ 'X';
     }
-    return 0.5;
+    return 1U << (frac_bits - 1);
 }
 
-static void backpropagate(struct node *node, double score)
+static void backpropagate(struct node *node, unsigned score)
 {
     while (node) {
         node->n_visits++;
         node->score += score;
         node = node->parent;
-        score = 1 - score;
+        score = (1U << frac_bits) - score;
     }
 }
 
@@ -119,13 +130,13 @@ int mcts(char *table, char player)
         memcpy(temp_table, table, N_GRIDS);
         while (1) {
             if ((win = check_win(temp_table)) != ' ') {
-                double score =
+                unsigned score =
                     calculate_win_value(win, node->player ^ 'O' ^ 'X');
                 backpropagate(node, score);
                 break;
             }
             if (node->n_visits == 0) {
-                double score = simulate(temp_table, node->player);
+                unsigned score = simulate(temp_table, node->player);
                 backpropagate(node, score);
                 break;
             }
