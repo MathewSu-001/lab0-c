@@ -39,12 +39,37 @@ static void free_node(struct node *node)
     free(node);
 }
 
+unsigned fixed_mul(unsigned a, unsigned b)
+{
+    unsigned result;
+
+    result = a * b;
+    /* Rounding; mid values are rounded up*/
+    result += (1U << (frac_bits - 1));
+
+    return result >> frac_bits;
+}
+
+unsigned fixed_div(unsigned a, unsigned b)
+{
+    unsigned result = a << frac_bits;
+
+    /* Rounding: mid values are rounded up. */
+    result += (b >> 1);
+
+    return result / b;
+}
+
 static inline double uct_score(int n_total, int n_visits, unsigned score)
 {
     if (n_visits == 0)
-        return DBL_MAX;
-    return score / n_visits +
-           EXPLORATION_FACTOR * sqrt(log(n_total) / n_visits);
+        return (~0U);
+
+    unsigned fixed_sqrt =
+        sqrt(fixed_div((unsigned) log(n_total), (unsigned) n_visits));
+    unsigned tmp = fixed_mul((unsigned) EXPLORATION_FACTOR, fixed_sqrt);
+
+    return fixed_div(score, (unsigned) n_visits) + tmp;
 }
 
 static struct node *select_move(struct node *node)
