@@ -78,17 +78,15 @@ unsigned long fixed_log(unsigned long n)
     return result << 1;
 }
 
-
 static inline double uct_score(int n_total, int n_visits, unsigned long score)
 {
     if (n_visits == 0)
         return (~0U);
 
-    unsigned long fixed_sqrt =
-        sqrt(fixed_div(fixed_log((unsigned long) n_total << frac_bits),
-                       (unsigned long) n_visits));
-    unsigned long tmp =
-        fixed_mul((unsigned long) EXPLORATION_FACTOR, fixed_sqrt);
+    unsigned long f_sqrt =
+        fixed_sqrt(fixed_div(fixed_log((unsigned long) n_total << frac_bits),
+                             (unsigned long) n_visits));
+    unsigned long tmp = fixed_mul((unsigned long) EXPLORATION_FACTOR, f_sqrt);
 
     return fixed_div(score, (unsigned long) n_visits) + tmp;
 }
