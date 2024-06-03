@@ -78,6 +78,25 @@ unsigned long fixed_log(unsigned long n)
     return result << 1;
 }
 
+unsigned long fixed_sqrt(unsigned long x)
+{
+    if (!x || x == (1U << frac_bits))
+        return x;
+
+    unsigned long z = 0;
+    unsigned long m = 1UL << ((63 - __builtin_clz(x)) & ~1UL);
+    for (; m; m >>= 2) {
+        unsigned long b = z + m;
+        z >>= 1;
+        if (x >= b) {
+            x -= b;
+            z += m;
+        }
+    }
+    z <<= (frac_bits >> 1);
+    return z;
+}
+
 static inline double uct_score(int n_total, int n_visits, unsigned long score)
 {
     if (n_visits == 0)
