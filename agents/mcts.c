@@ -8,13 +8,13 @@
 #include "mcts.h"
 #include "util.h"
 
-#define frac_bits 8
+#define frac_bits 16
 
 struct node {
     int move;
     char player;
     int n_visits;
-    unsigned score;
+    unsigned long score;
     struct node *parent;
     struct node *children[N_GRIDS];
 };
@@ -39,9 +39,9 @@ static void free_node(struct node *node)
     free(node);
 }
 
-unsigned fixed_mul(unsigned a, unsigned b)
+unsigned long fixed_mul(unsigned long a, unsigned long b)
 {
-    unsigned result;
+    unsigned long result;
 
     result = a * b;
     /* Rounding; mid values are rounded up*/
@@ -50,9 +50,9 @@ unsigned fixed_mul(unsigned a, unsigned b)
     return result >> frac_bits;
 }
 
-unsigned fixed_div(unsigned a, unsigned b)
+unsigned long fixed_div(unsigned long a, unsigned long b)
 {
-    unsigned result = a << frac_bits;
+    unsigned long result = a << frac_bits;
 
     /* Rounding: mid values are rounded up. */
     result += (b >> 1);
@@ -60,27 +60,49 @@ unsigned fixed_div(unsigned a, unsigned b)
     return result / b;
 }
 
-static inline double uct_score(int n_total, int n_visits, unsigned score)
+unsigned long fixed_log(unsigned long n)
+{
+    unsigned long result = 0;
+    unsigned long tmp = fixed_div(n - (1U << frac_bits), n + (1U << frac_bits));
+    unsigned long ratio = fixed_mul(tmp, tmp);
+
+    int k = 0;
+    while (k < 100) {
+        unsigned long ttmp = fixed_div(tmp, (2 * k + 1) << frac_bits);
+        tmp = fixed_mul(tmp, ratio);
+        k++;
+
+        result += ttmp;
+    }
+
+    return result << 1;
+}
+
+
+static inline double uct_score(int n_total, int n_visits, unsigned long score)
 {
     if (n_visits == 0)
         return (~0U);
 
-    unsigned fixed_sqrt =
-        sqrt(fixed_div((unsigned) log(n_total), (unsigned) n_visits));
-    unsigned tmp = fixed_mul((unsigned) EXPLORATION_FACTOR, fixed_sqrt);
+    unsigned long fixed_sqrt =
+        sqrt(fixed_div(fixed_log((unsigned long) n_total << frac_bits),
+                       (unsigned long) n_visits));
+    unsigned long tmp =
+        fixed_mul((unsigned long) EXPLORATION_FACTOR, fixed_sqrt);
 
-    return fixed_div(score, (unsigned) n_visits) + tmp;
+    return fixed_div(score, (unsigned long) n_visits) + tmp;
 }
 
 static struct node *select_move(struct node *node)
 {
     struct node *best_node = NULL;
-    unsigned best_score = 0;
+    unsigned long best_score = 0;
     for (int i = 0; i < N_GRIDS; i++) {
         if (!node->children[i])
             continue;
-        unsigned score = uct_score(node->n_visits, node->children[i]->n_visits,
-                                   node->children[i]->score);
+        unsigned long score =
+            uct_score(node->n_visits, node->children[i]->n_visits,
+                      node->children[i]->score);
         if (score > best_score) {
             best_score = score;
             best_node = node->children[i];
@@ -98,7 +120,7 @@ static struct node *select_move(struct node *node)
     return best_node;
 }
 
-static unsigned simulate(char *table, char player)
+static unsigned long simulate(char *table, char player)
 {
     char current_player = player;
     char temp_table[N_GRIDS];
@@ -123,7 +145,7 @@ static unsigned simulate(char *table, char player)
     return 1U << (frac_bits - 1);
 }
 
-static void backpropagate(struct node *node, unsigned score)
+static void backpropagate(struct node *node, unsigned long score)
 {
     while (node) {
         node->n_visits++;
@@ -155,13 +177,13 @@ int mcts(char *table, char player)
         memcpy(temp_table, table, N_GRIDS);
         while (1) {
             if ((win = check_win(temp_table)) != ' ') {
-                unsigned score =
+                unsigned long score =
                     calculate_win_value(win, node->player ^ 'O' ^ 'X');
                 backpropagate(node, score);
                 break;
             }
             if (node->n_visits == 0) {
-                unsigned score = simulate(temp_table, node->player);
+                unsigned long score = simulate(temp_table, node->player);
                 backpropagate(node, score);
                 break;
             }

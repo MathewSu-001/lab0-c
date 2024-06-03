@@ -6,7 +6,7 @@
 
 #include "game.h"
 
-#define frac_bits 8
+#define frac_bits 16
 #define LOOKUP(table, i, j, else_value)                         \
     ((i) < 0 || (j) < 0 || (i) > BOARD_SIZE || (j) > BOARD_SIZE \
          ? (else_value)                                         \
@@ -63,7 +63,7 @@ char check_win(char *t)
     return 'D';
 }
 
-unsigned calculate_win_value(char win, char player)
+unsigned long calculate_win_value(char win, char player)
 {
     if (win == player)
         return 1U << frac_bits;
