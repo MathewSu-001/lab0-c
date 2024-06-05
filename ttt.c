@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include "agents/mcts.h"
+#include "agents/negamax.h"
 #include "game.h"
 #include "ttt.h"
 
@@ -93,7 +94,20 @@ static int get_input(char player)
     return GET_INDEX(y, x);
 }
 
-void ttt()
+void show_time()
+{
+    time_t rawtime;
+    struct tm *timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+    printf("Current time: %s\n", buffer);
+}
+
+static void ttt_0()  // human v.s. ai(mcts)
 {
     srand(time(NULL));
     char table[N_GRIDS];
@@ -135,4 +149,57 @@ void ttt()
         turn = turn == 'X' ? 'O' : 'X';
     }
     print_moves();
+    move_count = 0;
+}
+
+static void ttt_1()  // ai(negamax) v.s. ai(mcts)
+{
+    srand(time(NULL));
+    char table[N_GRIDS];
+    memset(table, ' ', N_GRIDS);
+    char turn = 'X';
+    char ai = 'O';
+
+    negamax_init();
+    while (1) {
+        char win = check_win(table);
+        if (win == 'D') {
+            draw_board(table);
+            printf("It is a draw!\n");
+            break;
+        } else if (win != ' ') {
+            draw_board(table);
+            printf("%c won!\n", win);
+            break;
+        }
+
+        if (turn == ai) {
+            int move = mcts(table, ai);
+            if (move != -1) {
+                show_time();
+                table[move] = ai;
+                record_move(move);
+                draw_board(table);
+            }
+        } else {
+            int move = negamax_predict(table, turn).move;
+            if (move != -1) {
+                show_time();
+                table[move] = turn;
+                record_move(move);
+                draw_board(table);
+            }
+        }
+        turn = turn == 'X' ? 'O' : 'X';
+    }
+    print_moves();
+    move_count = 0;
+}
+
+void ttt(int n)
+{
+    if (n)
+        ttt_1();
+    else
+        ttt_0();
 }

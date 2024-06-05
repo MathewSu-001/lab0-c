@@ -74,6 +74,7 @@ static int fail_count = 0;
 static int string_length = MAXSTRING;
 
 static int descend = 0;
+static int opponent = 0;
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -954,7 +955,7 @@ static bool do_shuffle(int argc, char *argv[])
 
 static bool do_ttt(int argc, char *argv[])
 {
-    ttt();
+    ttt(opponent);
     return 0;
 }
 
@@ -1147,6 +1148,8 @@ static void console_init()
               "Number of times allow queue operations to return false", NULL);
     add_param("descend", &descend,
               "Sort and merge queue in ascending/descending order", NULL);
+    add_param("opponent", &opponent,
+              "Choose ttt opponent: human(0) or computer(1).", NULL);
 }
 
 /* Signal handlers */

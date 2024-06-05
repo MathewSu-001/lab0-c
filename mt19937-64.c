@@ -86,7 +86,7 @@ uint64_t mt19937_rand(void)
     if (mti >= NN) { /* generate NN words at one time */
 
         int i;
-        static const mag01[2] = {0ULL, MATRIX_A};
+        static const uint64_t mag01[2] = {0ULL, MATRIX_A};
         /* if mt19937_init() has not been called, */
         /* a default initial seed is used     */
         if (mti == NN + 1)

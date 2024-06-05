@@ -11,4 +11,4 @@
 #include "agents/mcts.h"
 #include "game.h"
 
-void ttt();  // Static function declaration
+void ttt(int);  // Static function declaration
