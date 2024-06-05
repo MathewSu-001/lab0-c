@@ -40,6 +40,7 @@ $(GIT_HOOKS):
 OBJS := qtest.o report.o console.o harness.o queue.o list_sort.o\
         random.o dudect/constant.o dudect/fixture.o dudect/ttest.o \
 		agents/mcts.o ttt.o game.o \
+		agents/negamax.o zobrist.o mt19937-64.o \
         shannon_entropy.o \
         linenoise.o web.o
 

@@ -229,9 +229,15 @@ static inline void hlist_splice_init(struct hlist_head *from,
  * @head:	the head for your list.
  * @member:	the name of the hlist_node within the struct.
  */
+#ifdef __HAVE_TYPEOF
 #define hlist_for_each_entry(pos, head, member)                              \
     for (pos = hlist_entry_safe((head)->first, typeof(*(pos)), member); pos; \
          pos = hlist_entry_safe((pos)->member.next, typeof(*(pos)), member))
+#else
+#define hlist_for_each_entry(pos, head, member, type)              \
+    for (pos = hlist_entry_safe((head)->first, type, member); pos; \
+         pos = hlist_entry_safe((pos)->member.next, type, member))
+#endif
 
 /**
  * hlist_for_each_entry_safe - iterate over list of given type safe against
